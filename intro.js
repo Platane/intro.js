@@ -130,6 +130,10 @@
       ++this._currentStep;
     }
 
+    if (typeof (this._introBeforeChangeCallback) === 'function') {
+        this._introBeforeChangeCallback.call(this,this._currentStep);
+    }
+
     if((this._introItems.length) <= this._currentStep) {
       //end of the intro
       //check if any callback is defined
@@ -150,8 +154,13 @@
    * @method _nextStep
    */
   function _previousStep() {
+
     if (this._currentStep === 0) {
       return false;
+    }
+
+    if (typeof (this._introBeforeChangeCallback) === 'function') {
+        this._introBeforeChangeCallback.call(this,this._currentStep-1);
     }
 
     _showElement.call(this, this._introItems[--this._currentStep].element);
@@ -256,6 +265,11 @@
         this._introChangeCallback.call(this, targetElement);
     }
     
+    // arrange the scrollbar so the element is visible
+    // this has to be done before _getOffset, because the element wil move
+    _scrollMeVisible($(targetElement));
+
+
     var self = this,
         oldHelperLayer = document.querySelector('.introjs-helperLayer'),
         elementPosition = _getOffset(targetElement);
@@ -276,7 +290,9 @@
                                            'left: '  + (elementPosition.left - 5)    + 'px;');
       //remove old classes
       var oldShowElement = document.querySelector('.introjs-showElement');
-      oldShowElement.className = oldShowElement.className.replace(/introjs-[a-zA-Z]+/g, '').replace(/^\s+|\s+$/g, '');
+      if(oldShowElement)
+        oldShowElement.className = oldShowElement.className.replace(/introjs-[a-zA-Z]+/g, '').replace(/^\s+|\s+$/g, '');
+
       //we should wait until the CSS3 transition is competed (it's 0.3 sec) to prevent incorrect `height` and `width` calculation
       if (self._lastShowElementTimer) {
         clearTimeout(self._lastShowElementTimer);
@@ -378,7 +394,11 @@
       //change to new intro item
       targetElement.className += ' introjs-relativePosition';
     }
+    
+    
 
+    /*
+    // this is done early
     if (!_elementInViewport(targetElement)) {
       var rect = targetElement.getBoundingClientRect(),
           top = rect.bottom - (rect.bottom - rect.top),
@@ -393,6 +413,7 @@
         window.scrollBy(0, bottom + 100); // 70px + 30px padding from edge to look nice
       }
     }
+    */
   }
 
   /**
@@ -430,6 +451,95 @@
       rect.right <= window.innerWidth 
     );
   }
+
+
+  function _scrollMeVisible($el,$viewport) {
+
+    $viewport=$viewport!=null?$viewport:$el.parent();
+
+    var viewport=$viewport.get(0);
+    
+    var viewportIsDocument=viewport.toString()=="[object HTMLDocument]" || $el.get(0).tagName.toLowerCase() == 'html';
+
+    //compute the viewport rect and the element bounding rect
+    var view={    //view port relative to the parent
+      top:0,left:0,bottom:0,right:0
+    };
+
+
+    if( viewportIsDocument ){ //meaning that the viewport is the parent of html, so it s the document
+      view.top=   window.scrollY;
+      view.left=  window.scrollX;
+    }else{
+      view.top=   $viewport.offset().top;
+      view.left=  $viewport.offset().left;
+    }
+    view.bottom=view.top+$viewport.innerHeight();
+    view.right= view.left+$viewport.innerWidth();
+
+    var rect={   //bound of the element relative to the parent
+      top:0,left:0,bottom:0,right:0
+    }
+    rect.top=$el.offset().top;
+    rect.left=$el.offset().left;
+    rect.bottom=rect.top+$el.height();
+    rect.right=rect.left+$el.width();
+
+    //on x axe
+    var xscrollBy=0,
+        yscrollBy=0;
+
+      if( view.left > rect.left )
+        xscrollBy = ( -30 ) - ( view.left - rect.left );
+      
+      if( view.right < rect.right )
+        xscrollBy = ( 30 ) - ( view.right - rect.right );
+      
+      if( view.left > rect.left && view.right < rect.right ){
+         // the viewport is to small,
+         // unable to display all the rect
+         // eventully we could position the middle of the viewport on the middle of the el
+         // for now just do nothing
+         xscrollBy=0;
+      }
+    
+
+    //on y axe
+      if( view.top > rect.top )
+        yscrollBy = (- 30 ) - ( view.top - rect.top );
+      
+      if( view.bottom < rect.bottom )
+        yscrollBy = ( 100 ) - ( view.bottom - rect.bottom );
+      
+      if( view.top > rect.top && view.bottom < rect.bottom ){
+         // see bellow
+         yscrollBy=0;
+      }
+
+
+    //apply the scroll
+    if( viewportIsDocument ){
+      //its the last parent
+      window.scrollBy( xscrollBy , yscrollBy );
+
+      //last reccurssive call
+      return;
+    }
+
+    if( viewport.scrollBy )
+      viewport.scrollBy( xscrollBy , yscrollBy );
+    else{
+      viewport.scrollLeft=viewport.scrollLeft+xscrollBy;
+      viewport.scrollTop =viewport.scrollTop +yscrollBy;
+    }
+   
+    //reccurssive
+    return _scrollMeVisible($el,$viewport.parent());
+
+  }
+
+  //exposure, just for test
+  window.ilo=_scrollMeVisible;
 
   /**
    * Add overlay layer to the page
@@ -482,6 +592,21 @@
    * @returns Element's position info
    */
   function _getOffset(element) {
+    
+    //jQuery power
+    var $el=$(element);
+    var o=$el.offset();
+    
+    var pos={
+      top:o.top,
+      left:o.left,
+      width:$el.outerWidth(),
+      height:$el.outerHeight(),
+    };
+
+    return pos;
+
+
     var elementPosition = {};
 
     //set width
@@ -502,7 +627,7 @@
     elementPosition.top = _y;
     //set left
     elementPosition.left = _x;
-
+    
     return elementPosition;
   }
 
@@ -575,6 +700,14 @@
     onchange: function(providedCallback) {
       if (typeof (providedCallback) === 'function') {
         this._introChangeCallback = providedCallback;
+      } else {
+        throw new Error('Provided callback for onchange was not a function.');
+      }
+      return this;
+    },
+    onbeforechange: function(providedCallback) {
+      if (typeof (providedCallback) === 'function') {
+        this._introBeforeChangeCallback = providedCallback;
       } else {
         throw new Error('Provided callback for onchange was not a function.');
       }
