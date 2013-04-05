@@ -6,4 +6,4 @@ It use some jQuery method to do the hard work.
 
 It also add a beforeChange event.
 
-see an exemple at [http://platane.github.com/intro.js/index.html](http://platane.github.com/intro.js/index.html)
+see an example at [http://platane.github.com/intro.js/index.html](http://platane.github.com/intro.js/index.html)
