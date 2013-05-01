@@ -267,7 +267,9 @@
     
     // arrange the scrollbar so the element is visible
     // this has to be done before _getOffset, because the element wil move
-    _scrollMeVisible($(targetElement));
+    $(targetElement).scrollMeVisible({
+		animation:false, // who got time for animation?
+	});
 
 
     var self = this,
@@ -452,94 +454,6 @@
     );
   }
 
-
-  function _scrollMeVisible($el,$viewport) {
-
-    $viewport=$viewport!=null?$viewport:$el.parent();
-
-    var viewport=$viewport.get(0);
-    
-    var viewportIsDocument=viewport.toString()=="[object HTMLDocument]" || $el.get(0).tagName.toLowerCase() == 'html';
-
-    //compute the viewport rect and the element bounding rect
-    var view={    //view port relative to the parent
-      top:0,left:0,bottom:0,right:0
-    };
-
-
-    if( viewportIsDocument ){ //meaning that the viewport is the parent of html, so it s the document
-      view.top=   window.scrollY;
-      view.left=  window.scrollX;
-    }else{
-      view.top=   $viewport.offset().top;
-      view.left=  $viewport.offset().left;
-    }
-    view.bottom=view.top+$viewport.innerHeight();
-    view.right= view.left+$viewport.innerWidth();
-
-    var rect={   //bound of the element relative to the parent
-      top:0,left:0,bottom:0,right:0
-    }
-    rect.top=$el.offset().top;
-    rect.left=$el.offset().left;
-    rect.bottom=rect.top+$el.height();
-    rect.right=rect.left+$el.width();
-
-    //on x axe
-    var xscrollBy=0,
-        yscrollBy=0;
-
-      if( view.left > rect.left )
-        xscrollBy = ( -30 ) - ( view.left - rect.left );
-      
-      if( view.right < rect.right )
-        xscrollBy = ( 30 ) - ( view.right - rect.right );
-      
-      if( view.left > rect.left && view.right < rect.right ){
-         // the viewport is to small,
-         // unable to display all the rect
-         // eventully we could position the middle of the viewport on the middle of the el
-         // for now just do nothing
-         xscrollBy=0;
-      }
-    
-
-    //on y axe
-      if( view.top > rect.top )
-        yscrollBy = (- 30 ) - ( view.top - rect.top );
-      
-      if( view.bottom < rect.bottom )
-        yscrollBy = ( 100 ) - ( view.bottom - rect.bottom );
-      
-      if( view.top > rect.top && view.bottom < rect.bottom ){
-         // see bellow
-         yscrollBy=0;
-      }
-
-
-    //apply the scroll
-    if( viewportIsDocument ){
-      //its the last parent
-      window.scrollBy( xscrollBy , yscrollBy );
-
-      //last reccurssive call
-      return;
-    }
-
-    if( viewport.scrollBy )
-      viewport.scrollBy( xscrollBy , yscrollBy );
-    else{
-      viewport.scrollLeft=viewport.scrollLeft+xscrollBy;
-      viewport.scrollTop =viewport.scrollTop +yscrollBy;
-    }
-   
-    //reccurssive
-    return _scrollMeVisible($el,$viewport.parent());
-
-  }
-
-  //exposure, just for test
-  window.ilo=_scrollMeVisible;
 
   /**
    * Add overlay layer to the page

@@ -1,6 +1,7 @@
 <html>
 <meta http-equiv="content-type" content="text/html; charset=utf-8"></meta>
 <script src="jquery-1.9.0.min.js"></script>
+<script src="scrollMeVisible.js/scrollMeVisible.js"></script>
 <script src="intro.js"></script>
 <link rel="stylesheet" type="text/css" href="introjs.css"></link>
 
@@ -26,10 +27,13 @@
 <script type="text/javascript">
 window.onload=function(){
 	$('#btn-waldo').on('click',function(){ 
-		window.ilo( $('#waldo') ); 
+		$('#waldo').scrollMeVisible({
+		animate:true,
+		duration:400,
+		}); 
 	} );
 	$('#btn-waldo2').on('click',function(){ 
-		window.ilo( $('#waldo2') ); 
+		$('#waldo2').scrollMeVisible(); 
 	} );
 	$('div').css({'border':'solid 1px #888'});
 
